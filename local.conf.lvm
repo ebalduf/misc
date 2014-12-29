@@ -1,0 +1,75 @@
+[[local|localrc]]
+HOST_IP=10.10.1.75
+DEST=/opt/stack/new
+SERVICE_DIR=/tmp/OpenStack/services
+ACTIVE_TIMEOUT=90
+BOOT_TIMEOUT=90
+ASSOCIATE_TIMEOUT=60
+TERMINATE_TIMEOUT=60
+MYSQL_PASSWORD=secret
+DATABASE_PASSWORD=secret
+RABBIT_PASSWORD=secret
+ADMIN_PASSWORD=secret
+SERVICE_PASSWORD=secret
+SERVICE_TOKEN=111222333444
+SWIFT_HASH=1234123412341234
+ROOTSLEEP=0
+ERROR_ON_CLONE=False
+
+ENABLED_SERVICES=rabbit,mysql,key
+ENABLED_SERVICES+=,n-api,n-crt,n-obj,n-cpu,n-cond,n-sch,n-novnc,n-cauth
+ENABLED_SERVICES+=,neutron,q-svc,q-agt,q-dhcp,q-l3,q-meta,q-lbaas
+#ENABLED_SERVICES+=,n-net
+ENABLED_SERVICES+=,s-proxy,s-object,s-container,s-account
+ENABLED_SERVICES+=,g-api,g-reg
+ENABLED_SERVICES+=,cinder,c-api,c-vol,c-sch,c-bak
+ENABLED_SERVICES+=,heat,h-api,h-api-cfn,h-api-cw,h-eng
+#ENABLED_SERVICES+=,trove,tr-api,tr-tmgr,tr-cond
+ENABLED_SERVICES+=,horizon,tempest
+ENABLED_SERVICES+=sysstat,dstat,pidstat
+ENABLED_SERVICES+=,ceilometer-acompute,ceilometer-acentral,ceilometer-collector,ceilometer-api,ceilometer-alarm-notifier,ceilometer-alarm-evaluator,ceilometer-anotification
+
+PUBLIC_INTERFACE=eth2
+PUBLIC_NETWORK_GATEWAY=10.10.1.1
+FLOATING_RANGE=10.10.1.0/24
+NETWORK_GATEWAY=10.1.0.1
+FIXED_RANGE=10.1.0.0/24
+FIXED_NETWORK_SIZE=256
+#    Q_USE_PROVIDERNET_FOR_PUBLIC=True
+#    PUBLIC_PHYSICAL_NETWORK=public
+#    OVS_BRIDGE_MAPPINGS=public:br-ex
+
+SKIP_EXERCISES=boot_from_volume,bundle,client-env,euca
+SERVICE_HOST=$HOST_IP
+# Screen console logs will capture service logs.
+SYSLOG=False
+SCREEN_LOGDIR=$DEST/screen-logs
+LOGFILE=$DEST/devstacklog.txt
+LOGDAYS=2
+VERBOSE=True
+VIRT_DRIVER=libvirt
+SWIFT_REPLICAS=1
+LOG_COLOR=False
+PIP_USE_MIRRORS=False
+USE_GET_PIP=1
+# Don't reset the requirements.txt files after g-r updates
+UNDO_REQUIREMENTS=False
+CINDER_PERIODIC_INTERVAL=10
+export OS_NO_CACHE=True
+CINDER_SECURE_DELETE=False
+API_RATE_LIMIT=False
+VOLUME_BACKING_FILE_SIZE=24G
+TEMPEST_HTTP_IMAGE=http://$HOST_IP/
+USE_SCREEN=True
+FORCE_CONFIG_DRIVE=always
+
+IMAGE_URLS+=",http://cloud-images.ubuntu.com/trusty/current/trusty-server-cloudimg-amd64-disk1.img,http://download.cirros-cloud.net/0.3.2/cirros-0.3.2-x86_64-disk.img,http://download.cirros-cloud.net/0.3.2/cirros-0.3.2-x86_64-uec.tar.gz"
+
+[[post-config|$CINDER_CONF]]
+[DEFAULT]
+enabled_backends=lvmdriver-1
+default_volume_type = lvmdriver-1
+[lvmdriver-1] 
+volume_group=stack-volumes-1 
+volume_driver=cinder.volume.drivers.lvm.LVMISCSIDriver 
+volume_backend_name=LVM_iSCSI 
