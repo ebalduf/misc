@@ -13,22 +13,57 @@
 
 BASEIP=10.5.1.
 STORAGEBASEIP=10.5.10.
-MYID=$(echo $1 | cut -d '-' -f 2)
+FIRSTRUNFILENAME=/home/user/firstrun
+NETMASK=255.255.255.0
+GATEWAY=${BASEIP}254
+NAMESERVER=8.8.8.8
+DOMAIN=solidfire.localdomain
+
+MYID=$(hostname -s | cut -d '-' -f 2)
+# exit these with a zero status because this may be 
+# an instance we don't want to autoconfigure (i.e. base image)
+# and so the exit is not necessarily an error
+
 # sanity check on the number part
 if [ ! "$(echo $MYID | grep "^[ [:digit:] ]*$")" ]
 then
- exit 1
+ exit 0
 fi
-
 # sanity check we are in range
 if [ $MYID -lt 1 -o $MYID -gt 12 ] ; then
-   exit 1
+   exit 0
 fi
 MYIP=${BASEIP}$(expr $MYID + 100)
-STORAGEIP=${STOARGEBASEIP}$(expr $MYID + 100)
+STORAGEIP=${STORAGEBASEIP}$(expr $MYID + 100)
 
-# get rid of the address on eth1. It is only there because VMware customization requires something
-ip addr del 10.254.254.254/24 dev eth1
+if [ -f $FIRSTRUNFILENAME ]; then
+# build a new network interface script
+cat << EOF > /etc/network/interfaces
+iface lo inet loopback
+auto lo
+
+auto eth0
+iface eth0 inet static
+address ${MYIP}
+netmask ${NETMASK}
+up route add default gw ${GATEWAY}
+
+auto eth1
+iface eth1 inet manual
+
+auto eth2
+iface eth2 inet static
+address ${STORAGEIP}
+netmask ${NETMASK}
+dns-search      ${DOMAIN}
+dns-nameservers ${NAMESERVER}
+EOF
+
+rm $FIRSTRUNFILENAME
+/sbin/shutdown -r now
+sleep 10
+fi
+
 su -c "cat /home/ebalduf/local.conf.kilo | sed 's/HOST_IP=REPLACE_THIS_IP_WITH_REAL_IP/HOST_IP='${MYIP}'/g' > /home/user/local.conf" user
 su -c "cat /home/user/devstack/lib/keystone | sed 's/ get_or_add_user_project_role \$member_role \$demo_user \$invis_tenant/\ #get_or_add_user_project_role \$member_role \$demo_user \$invis_tenant/' > /tmp/keystone; cp /tmp/keystone /home/user/devstack/lib/keystone" user
 su -c "/home/user/devstack/stack.sh &> /home/user/stacklog.log &" user
