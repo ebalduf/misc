@@ -1,0 +1,7 @@
+Some Example code to do SolidFire API calls using Ruby.  
+
+This version is VERY simple, and does little to no error checking.  
+The example at the bottom creates a user, creates a volume, deletes the volume, 
+purges the volume and deletes the user.... watch quick because it's all gone 
+at the end, or comment out the deletes to see it, but then again you will get a
+duplicate user error the next time you run it. 
