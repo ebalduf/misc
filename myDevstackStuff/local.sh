@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -x
 
 # Put the main IP between 240 -  250 and this will set a range between 200-210
 BASEIP=172.27.162.
@@ -16,21 +15,6 @@ START=$(expr \( \( $MYIP - 240 \) \* 10 \) + 100 )
 END=$(expr $START + 9)
 FLOATING_IP_START=$BASEIP$START
 FLOATING_IP_END=$BASEIP$END
-
-# set VOLUME_BACKEND_NAME to the name of your array
-VOLUME_BACKEND_NAME="solidfire"
-
-
-function get_field {
-    while read data; do
-        if [ "$1" -lt 0 ]; then
-            field="(\$(NF$1))"
-        else
-            field="\$$(($1 + 1))"
-        fi
-        echo "$data" | awk -F'[ \t]*\\|[ \t]*' "{print $field}"
-    done
-}
 
 # Keep track of the devstack directory
 TOP_DIR=$(cd $(dirname "$0") && pwd)
@@ -55,17 +39,6 @@ sudo iptables -I INPUT 1 -p tcp --dport 6080:6082 -j ACCEPT
 sudo ovs-vsctl add-port br-ex $PUBLIC_PORT
 sudo ip link set dev $PUBLIC_PORT up
 
-unset OS_USER_DOMAIN_ID
-unset OS_PROJECT_DOMAIN_ID
-
-#allow in rabbit, glance, iSCSI traffic
-sudo iptables -I INPUT 2 -p tcp --dport 5672 -j ACCEPT
-sudo iptables -I INPUT 2 -p tcp --dport 9696 -j ACCEPT
-sudo iptables -I INPUT 2 -p tcp --dport 9292 -j ACCEPT
-sudo iptables -I INPUT 2 -p tcp --dport 3260 -j ACCEPT
-sudo iptables -I INPUT 2 -p tcp --dport 8776 -j ACCEPT
-sudo iptables -I INPUT 2 -p tcp --dport 35357 -j ACCEPT
-
 if is_service_enabled nova; then
 
     # Get OpenStack admin auth
@@ -76,35 +49,7 @@ if is_service_enabled nova; then
     neutron subnet-update --dns-nameserver $NAMESERVER ext-subnet
 
     cinder type-create solidfire
-    cinder type-key solidfire set volume_backend_name=$VOLUME_BACKEND_NAME
-
-    cinder type-create NetApp-iSCSI
-    cinder type-key NetApp-iSCSI set volume_backend_name='ntap-iscsi'
-    cinder type-create NetApp-NFS
-    cinder type-key NetApp-NFS set volume_backend_name='ntap-nfs'
-
-    # Setup 4 arrays corresponding to your Volume types and QoS settings
-    VOL_TYPES=( "silver" "bronze" "gold" "webserver" "platinum" )
-    DESCRIPTION=( '$[$1.12/GB/month]' '$[0.50/GB/month]' '[$2.10/GB/month]' '[$0.35/GB/month]' '[$3.00/GB/month]' )
-    MIN=(        500    100      1000   100       2000    )
-    MAX=(        800    200      1500  1000       2400    )
-    BURST=(      900    250      1700  1500       2500    )
-
-    INDEX=0
-    for VOL_TYPE in "${VOL_TYPES[@]}"
-    do
-       echo "Create Volume Type: ${VOL_TYPE}"
-       TYPE_DESC="IOPS=${MIN[${INDEX}]}/${MAX[${INDEX}]}/${BURST[${INDEX}]} ${DESCRIPTION[${INDEX}]}"
-       TYPENAME_TYPEID=$(cinder type-create --description "${TYPE_DESC}" ${VOL_TYPE} | grep ${VOL_TYPE} | get_field 1)
-       echo "Creating QoS Specs"
-       QOS_ID=$(cinder qos-create ${VOL_TYPE}-qos qos:minIOPS=${MIN[${INDEX}]} qos:maxIOPS=${MAX[${INDEX}]} qos:burstIOPS=${BURST[${INDEX}]} | grep id | get_field 2)
-       echo "Setting volume backend name ..."
-       cinder type-key ${TYPENAME_TYPEID} set volume_backend_name=${VOLUME_BACKEND_NAME}
-       echo "Associating QoS specs with volume type .... "
-       cinder qos-associate ${QOS_ID} ${TYPENAME_TYPEID}
-       ((INDEX++))
-    done
-
+    cinder type-key solidfire set volume_backend_name=solidfire
 
     # Get OpenStack demo auth
     source $TOP_DIR/openrc demo demo
