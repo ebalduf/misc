@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+sudo iptables -I INPUT 6 -p tcp --dport 6080:6082 -j ACCEPT
+sudo iptables -I INPUT 6 -p tcp --dport 5900:5902 -j ACCEPT
+sudo iptables -I INPUT 6 -p tcp --dport 5800:5802 -j ACCEPT
+sudo iptables -I INPUT 6 -p tcp --dport 6000:6002 -j ACCEPT
+sudo iptables -I INPUT 6 -p tcp --dport 49152 -j ACCEPT
+sudo iptables -I INPUT 6 -p udp --dport 4789 -j ACCEPT

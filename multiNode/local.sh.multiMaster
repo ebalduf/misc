@@ -65,6 +65,10 @@ sudo iptables -I INPUT 2 -p tcp --dport 9292 -j ACCEPT
 sudo iptables -I INPUT 2 -p tcp --dport 3260 -j ACCEPT
 sudo iptables -I INPUT 2 -p tcp --dport 8776 -j ACCEPT
 sudo iptables -I INPUT 2 -p tcp --dport 35357 -j ACCEPT
+# Live Migration Port
+sudo iptables -I INPUT 12 -p tcp --dport 49152 -j ACCEPT
+#vxlan port
+sudo iptables -I INPUT 12 -p udp --dport 4789 -j ACCEPT
 
 if is_service_enabled nova; then
 
